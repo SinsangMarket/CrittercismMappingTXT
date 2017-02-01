@@ -1,0 +1,56 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+    defaultConfig {
+        applicationId "crittercism.wjdtncjs.com.crittercismuploadmappingtxt"
+        minSdkVersion 14
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:25.1.1'
+    testCompile 'junit:junit:4.12'
+}
+
+
+task uploadPro << {
+    logger.error("Uploading mapping.txt file to crittercism")
+    String temp = projectDir;
+    temp = temp.replace("\\", "/");
+    String[] cmd = ["curl", "-k", "https://app.crittercism.com/api_beta/proguard/" + CRITERCISM_APP_ID,
+                    "-F", "proguard=@" + temp + "/build/outputs/mapping/release/mapping.txt",
+                    "-F", "app_version=" + VERSION_NAME + '-' + VERSION_CODE,
+                    "-F", "key=" + CRITERCISM_API_KEY]
+    logger.error("CMD : " + cmd)
+    ProcessBuilder builder = new ProcessBuilder(cmd);
+    Process process = builder.start();
+    process.waitFor()
+    println process.err.text
+    println process.text
+}
+
+gradle.buildFinished {
+    logger.error("JSC : NAME ! - " + gradle.startParameter.taskNames);
+    if (gradle.startParameter.taskNames.contains(":app:assembleRelease")) {
+        logger.error("JSC : STATR UPLOAD ! - " + gradle.startParameter.taskNames);
+        tasks.uploadPro.execute()
+    } else {
+        logger.error("JSC : PASS")
+    }
+}
